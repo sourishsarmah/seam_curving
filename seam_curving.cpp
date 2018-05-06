@@ -1,12 +1,13 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <vector>
+#include <cmath>
 using namespace std;
 
 struct AdjListNode
 {
 	int dest;
+	int val;
 	struct AdjListNode *next;
 };
 
@@ -28,35 +29,32 @@ public:
 		for(int i = 0; i < V; ++i)
 			array[i].head = NULL;
 	}
-	AdjListNode *newAdjListNode(int dest)
+	AdjListNode *newNode(int dest, int val)
 	{
-		AdjListNode *newNode = new AdjListNode;
-		newNode->dest = dest;
-		newNode->next = NULL;
-		return newNode;
+		AdjListNode *node = new AdjListNode;
+		node->dest = dest;
+		node->val = val;
+		node->next = NULL;
+		return node;
 	}
-	void addEdge(int src, int dest)
+	void addEdge(int src, int dest, int val)
 	{
-		AdjListNode *newNode = newAdjListNode(dest);
-		newNode->next = array[src].head;
-		array[src].head = newNode;
-		newNode = newAdjListNode(src);
-		newNode->next = array[dest].head;
-		array[dest].head = newNode;
+		AdjListNode *node = newNode(dest,val);
+		node->next = array[src].head;
+        array[src].head = node;
 	}
 	void printGraph()
 	{
-		int v;
-		for (v = 0; v < V; ++v)
+		for (int v = 0; v < V; ++v)
 		{
-			AdjListNode *pCrawl = array[v].head;
-			cout << "\n Adjacency list of vertex " << v << "\n head ";
-			while (pCrawl)
+			AdjListNode *temp = array[v].head;
+			cout<<"\n Adjacency list of vertex "<<v<<"\n head ";
+			while (temp!=NULL)
 			{
-				cout << "-> " << pCrawl->dest;
-				pCrawl = pCrawl->next;
+				cout<<"->"<<temp->dest<<"="<<temp->val;
+				temp = temp->next;
 			}
-			cout << endl;
+			cout<<endl;
 		}
 	}
 };
@@ -79,8 +77,8 @@ class Image
 		fin >> c >> col >> row;
 		fin >> max_val;
 		cout << c << endl;
-		cout << "Columns=" << col << endl
-			 << "Rows=" << row << endl;
+		cout << "Columns=" << col << endl;
+		cout << "Rows=" << row << endl;
 		pixels = new int *[row];
 		for (int i = 0; i < row; i++)
 		{
@@ -104,12 +102,49 @@ class Image
 	}
 	int coord_to_flat(int x, int y)
 	{
-		return x * col + y;
+		return (x*col+y)+1;
+	}
+	void construct_graph(Graph &g)
+	{
+		for (int i=0; i<col;i++)
+		{
+			g.addEdge(0, i+1, pixels[0][i]);
+		}
+		for (int i=0; i<col; i++)
+		{
+			g.addEdge(size-col+1+i, size+1, pixels[row-1][i]);
+		}
+		for (int i=0; i<row-1; i++)
+		{
+			for (int j=0; j<col; j++)
+			{
+				int src = coord_to_flat(i,j);
+				int dest =  coord_to_flat(i+1,j);
+				int val = abs(pixels[i][j]-pixels[i+1][j]);
+				g.addEdge(src, dest, val);
+				if (j-1>=0)
+				{
+					int dest =  coord_to_flat(i+1,j-1);
+					int val = abs(pixels[i][j]-pixels[i+1][j-1]);
+					g.addEdge(src, dest, val);
+				}
+				if (j+1<col)
+				{
+					int dest =  coord_to_flat(i+1,j+1);
+					int val = abs(pixels[i][j]-pixels[i+1][j+1]);
+					g.addEdge(src, dest, val);
+				}
+			}
+		}
+
 	}
 };
 int main()
 {
-	Image Img("sample.pgm");
-	Img.display_pixels();
+	Image img("sample.pgm");
+	img.display_pixels();
+	Graph g(img.size+2);
+	img.construct_graph(g);
+	g.printGraph();
 	return 0;
 }
